@@ -50,7 +50,7 @@ print('Train...')
 #           callbacks=[ModelCheckpoint('imdb_lstm.h5', monitor='val_acc',
 #                                      save_best_only=True, save_weights_only=True)])
 
-model.load_weights('imdb_lstm.h5')
+model.load_weights('weights/imdb_lstm.h5')
 
 score, acc = model.evaluate(x_test, y_test,
                             batch_size=batch_size)
