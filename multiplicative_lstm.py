@@ -12,7 +12,6 @@ from keras.engine import Layer
 from keras.engine import InputSpec
 from keras.legacy import interfaces
 from keras.layers import Recurrent
-from keras.layers.recurrent import _time_distributed_dense
 
 
 
@@ -92,6 +91,7 @@ class MultiplicativeLSTM(Recurrent):
                  bias_constraint=None,
                  dropout=0.,
                  recurrent_dropout=0.,
+                 implementation=1,
                  **kwargs):
         super(MultiplicativeLSTM, self).__init__(**kwargs)
         self.units = units
@@ -117,6 +117,8 @@ class MultiplicativeLSTM(Recurrent):
         self.recurrent_dropout = min(1., max(0., recurrent_dropout))
         self.state_spec = [InputSpec(shape=(None, self.units)),
                            InputSpec(shape=(None, self.units))]
+        self.state_size = (self.units, self.units)
+        self.implementation = implementation
 
     def build(self, input_shape):
         if isinstance(input_shape, list):
@@ -187,29 +189,7 @@ class MultiplicativeLSTM(Recurrent):
         self.built = True
 
     def preprocess_input(self, inputs, training=None):
-        if self.implementation == 0:
-            input_shape = K.int_shape(inputs)
-            input_dim = input_shape[2]
-            timesteps = input_shape[1]
-
-            x_i = _time_distributed_dense(inputs, self.kernel_i, self.bias_i,
-                                          self.dropout, input_dim, self.units,
-                                          timesteps, training=training)
-            x_f = _time_distributed_dense(inputs, self.kernel_f, self.bias_f,
-                                          self.dropout, input_dim, self.units,
-                                          timesteps, training=training)
-            x_c = _time_distributed_dense(inputs, self.kernel_c, self.bias_c,
-                                          self.dropout, input_dim, self.units,
-                                          timesteps, training=training)
-            x_o = _time_distributed_dense(inputs, self.kernel_o, self.bias_o,
-                                          self.dropout, input_dim, self.units,
-                                          timesteps, training=training)
-            x_m = _time_distributed_dense(inputs, self.kernel_m, self.bias_m,
-                                          self.dropout, input_dim, self.units,
-                                          timesteps, training=training)
-            return K.concatenate([x_i, x_f, x_c, x_o, x_m], axis=2)
-        else:
-            return inputs
+        return inputs
 
     def get_constants(self, inputs, training=None):
         constants = []
@@ -266,13 +246,7 @@ class MultiplicativeLSTM(Recurrent):
             c = f * c_tm1 + i * self.activation(z2)
             o = self.recurrent_activation(z3)
         else:
-            if self.implementation == 0:
-                x_i = inputs[:, :self.units]
-                x_f = inputs[:, self.units: 2 * self.units]
-                x_c = inputs[:, 2 * self.units: 3 * self.units]
-                x_o = inputs[:, 3 * self.units: 4 * self.units]
-                x_m = inputs[:, 4 * self.units:]
-            elif self.implementation == 1:
+            if self.implementation == 1:
                 x_i = K.dot(inputs * dp_mask[0], self.kernel_i) + self.bias_i
                 x_f = K.dot(inputs * dp_mask[1], self.kernel_f) + self.bias_f
                 x_c = K.dot(inputs * dp_mask[2], self.kernel_c) + self.bias_c

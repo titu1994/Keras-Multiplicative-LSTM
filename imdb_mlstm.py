@@ -45,12 +45,12 @@ model.compile(loss='binary_crossentropy',
               metrics=['accuracy'])
 
 print('Train...')
-# model.fit(x_train, y_train,
-#           batch_size=batch_size,
-#           epochs=15,
-#           validation_data=(x_test, y_test),
-#           callbacks=[ModelCheckpoint('imdb_mlstm.h5', monitor='val_acc',
-#                                      save_best_only=True, save_weights_only=True)])
+model.fit(x_train, y_train,
+          batch_size=batch_size,
+          epochs=15,
+          validation_data=(x_test, y_test),
+          callbacks=[ModelCheckpoint('imdb_mlstm.h5', monitor='val_acc',
+                                     save_best_only=True, save_weights_only=True)])
 
 model.load_weights('weights/imdb_mlstm.h5')
 
